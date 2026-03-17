@@ -131,8 +131,17 @@ public class BytesTool {
     }
 
     public static boolean versionCheck(String target, String local) {
-        int[] targetParse = parseVersion(target);
-        int[] localParse = parseVersion(local);
+        if (target == null || local == null || local.isBlank()) {
+            return false;
+        }
+        int[] targetParse;
+        int[] localParse;
+        try {
+            targetParse = parseVersion(target);
+            localParse = parseVersion(local);
+        } catch (NumberFormatException e) {
+            return false;
+        }
         if (targetParse[0] < localParse[0]) {
             return true;
         }

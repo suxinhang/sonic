@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 public class AndroidSupplyTool implements ApplicationListener<ContextRefreshedEvent> {
-    private static final File sasBinary = new File("plugins" + File.separator + "sonic-android-supply");
+    private static final File sasBinary = org.cloud.sonic.agent.tools.PluginPathTool.file("sonic-android-supply");
     private static final String sas = sasBinary.getAbsolutePath();
 
     private static final Map<String, Thread> perfmonThreads = new ConcurrentHashMap<>();

@@ -30,8 +30,8 @@ import java.util.concurrent.Semaphore;
 @Component
 @Slf4j
 public class SGMTool {
-    private static final String pFile = new File("plugins").getAbsolutePath();
-    private static final File sgmBinary = new File(pFile + File.separator + "sonic-go-mitmproxy");
+    private static final String pFile = org.cloud.sonic.agent.tools.PluginPathTool.PLUGINS_DIR.getAbsolutePath();
+    private static final File sgmBinary = org.cloud.sonic.agent.tools.PluginPathTool.file("sonic-go-mitmproxy");
     private static final String sgm = sgmBinary.getAbsolutePath();
 
     public static String getCommand(int pPort, int webPort) {

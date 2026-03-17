@@ -75,7 +75,7 @@ public class SibTool implements ApplicationListener<ContextRefreshedEvent> {
 
     private static String bundleId;
     private static String xcodeProjectPath;
-    private static File sibBinary = new File("plugins" + File.separator + "sonic-ios-bridge");
+    private static File sibBinary = org.cloud.sonic.agent.tools.PluginPathTool.file("sonic-ios-bridge");
     private static String sib = sibBinary.getAbsolutePath();
     private static RestTemplate restTemplate;
 

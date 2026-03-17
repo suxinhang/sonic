@@ -99,7 +99,7 @@ public class AndroidDeviceBridgeTool implements ApplicationListener<ContextRefre
         if (path != null) {
             path += File.separator + "platform-tools" + File.separator + "adb";
         } else {
-            path = "plugins" + File.separator + "adb";
+            path = org.cloud.sonic.agent.tools.PluginPathTool.path("adb");
         }
         return path;
     }
@@ -695,7 +695,7 @@ public class AndroidDeviceBridgeTool implements ApplicationListener<ContextRefre
                 log.info("uninstall sonic Apk err, cause {}", e.getMessage());
             }
             try {
-                install(iDevice, "plugins/sonic-android-apk.apk");
+                install(iDevice, org.cloud.sonic.agent.tools.PluginPathTool.path("sonic-android-apk.apk"));
                 executeCommand(iDevice, "appops set org.cloud.sonic.android POST_NOTIFICATION allow");
                 executeCommand(iDevice, "appops set org.cloud.sonic.android RUN_IN_BACKGROUND allow");
                 executeCommand(iDevice, "dumpsys deviceidle whitelist +org.cloud.sonic.android");
@@ -716,8 +716,8 @@ public class AndroidDeviceBridgeTool implements ApplicationListener<ContextRefre
         if (!checkUiaApkVersion(iDevice)) {
             uninstall(iDevice, "io.appium.uiautomator2.server");
             uninstall(iDevice, "io.appium.uiautomator2.server.test");
-            install(iDevice, "plugins/sonic-appium-uiautomator2-server.apk");
-            install(iDevice, "plugins/sonic-appium-uiautomator2-server-test.apk");
+            install(iDevice, org.cloud.sonic.agent.tools.PluginPathTool.path("sonic-appium-uiautomator2-server.apk"));
+            install(iDevice, org.cloud.sonic.agent.tools.PluginPathTool.path("sonic-appium-uiautomator2-server-test.apk"));
             executeCommand(iDevice, "appops set io.appium.uiautomator2.server RUN_IN_BACKGROUND allow");
             executeCommand(iDevice, "appops set io.appium.uiautomator2.server.test RUN_IN_BACKGROUND allow");
             executeCommand(iDevice, "dumpsys deviceidle whitelist +io.appium.uiautomator2.server");

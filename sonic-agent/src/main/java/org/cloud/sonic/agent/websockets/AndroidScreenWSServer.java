@@ -34,6 +34,7 @@ import org.cloud.sonic.agent.tests.android.minicap.MiniCapUtil;
 import org.cloud.sonic.agent.tests.android.scrcpy.ScrcpyServerUtil;
 import org.cloud.sonic.agent.tests.handlers.AndroidMonitorHandler;
 import org.cloud.sonic.agent.tools.BytesTool;
+import org.cloud.sonic.agent.tools.PluginPathTool;
 import org.cloud.sonic.agent.tools.ScheduleTool;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -143,6 +144,24 @@ public class AndroidScreenWSServer implements IAndroidWSServer {
         }
     }
 
+    /**
+     * Default screen type: use scrcpy when v3.3.4+ server exists (Android 16 compatible);
+     * otherwise use minicap for API 35+ to avoid old scrcpy SurfaceControl.createDisplay crash.
+     */
+    private static String getDefaultScreenType(IDevice iDevice) {
+        if (PluginPathTool.file("scrcpy-server-v3.3.4").exists()) {
+            return "scrcpy";
+        }
+        try {
+            String apiStr = iDevice.getProperty(IDevice.PROP_BUILD_API_LEVEL);
+            if (apiStr != null && Integer.parseInt(apiStr.trim()) >= 35) {
+                return "minicap";
+            }
+        } catch (Exception ignored) {
+        }
+        return "scrcpy";
+    }
+
     private void startScreen(Session session) {
         IDevice iDevice = udIdMap.get(session);
         if (iDevice != null) {
@@ -158,7 +177,8 @@ public class AndroidScreenWSServer implements IAndroidWSServer {
                 }
                 while (ScreenMap.getMap().get(session) != null);
             }
-            typeMap.putIfAbsent(iDevice.getSerialNumber(), "scrcpy");
+            // Prefer scrcpy; use minicap only when device API>=35 and new scrcpy-server (v3.3.4) is not present
+            typeMap.putIfAbsent(iDevice.getSerialNumber(), getDefaultScreenType(iDevice));
             switch (typeMap.get(iDevice.getSerialNumber())) {
                 case "scrcpy" -> {
                     ScrcpyServerUtil scrcpyServerUtil = new ScrcpyServerUtil();

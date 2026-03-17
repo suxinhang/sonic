@@ -17,6 +17,7 @@
  */
 package org.cloud.sonic.agent.common.config;
 
+import org.cloud.sonic.agent.tools.PluginPathTool;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
@@ -31,7 +32,7 @@ public class ResourceConfig extends WebMvcConfigurationSupport {
         registry.addResourceHandler("/webjars/**").addResourceLocations(
                 "classpath:/META-INF/resources/webjars/");
         registry.addResourceHandler("/download/**")
-                .addResourceLocations("file:///" + System.getProperty("user.dir") + "/plugins/");
+                .addResourceLocations("file:///" + PluginPathTool.PLUGINS_DIR.getAbsolutePath().replace('\\', '/') + "/");
         super.addResourceHandlers(registry);
     }
 }

@@ -22,6 +22,7 @@ import com.android.ddmlib.IDevice;
 import com.android.ddmlib.IShellOutputReceiver;
 import jakarta.websocket.Session;
 import org.cloud.sonic.agent.tests.android.AndroidTestTaskBootThread;
+import org.cloud.sonic.agent.tools.PluginPathTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,17 +89,32 @@ public class ScrcpyLocalThread extends Thread {
         return isFinish;
     }
 
+    /** scrcpy server v3.3.4+ (supports Android 16), from https://github.com/Genymobile/scrcpy/releases */
+    private static final String SCRCPY_SERVER_V3_NAME = "scrcpy-server-v3.3.4";
+    private static final String SCRCPY_SERVER_LEGACY_NAME = "sonic-android-scrcpy.jar";
+    private static final String SCRCPY_SERVER_V3_VERSION = "3.3.4";
+    private static final String DEVICE_SERVER_PATH = "/data/local/tmp/sonic-android-scrcpy.jar";
+
     @Override
     public void run() {
-        File scrcpyServerFile = new File("plugins/sonic-android-scrcpy.jar");
-        try {
-            iDevice.pushFile(scrcpyServerFile.getAbsolutePath(), "/data/local/tmp/sonic-android-scrcpy.jar");
-        } catch (Exception e) {
-            e.printStackTrace();
+        File scrcpyServerFileV3 = PluginPathTool.file(SCRCPY_SERVER_V3_NAME);
+        File scrcpyServerFile = scrcpyServerFileV3.exists() ? scrcpyServerFileV3 : PluginPathTool.file(SCRCPY_SERVER_LEGACY_NAME);
+        boolean useV3 = scrcpyServerFileV3.exists();
+        if (!scrcpyServerFile.exists()) {
+            log.warn("scrcpy server not found in plugins: {} or {}", SCRCPY_SERVER_V3_NAME, SCRCPY_SERVER_LEGACY_NAME);
+            return;
         }
+        try {
+            iDevice.pushFile(scrcpyServerFile.getAbsolutePath(), DEVICE_SERVER_PATH);
+        } catch (Exception e) {
+            log.error("push scrcpy server failed", e);
+        }
+        String serverArgs = useV3
+                ? SCRCPY_SERVER_V3_VERSION + " log_level=INFO max_size=0 max_fps=60 tunnel_forward=true raw_stream=true control=false video=true audio=false show_touches=false stay_awake=false power_off_on_close=false clipboard_autosync=false"
+                : "1.23 log_level=info max_size=0 max_fps=60 tunnel_forward=true send_frame_meta=false control=false show_touches=false stay_awake=false power_off_on_close=false clipboard_autosync=false";
         AtomicBoolean isRetry = new AtomicBoolean(false);
         try {
-            iDevice.executeShellCommand("CLASSPATH=/data/local/tmp/sonic-android-scrcpy.jar app_process / com.genymobile.scrcpy.Server 1.23 log_level=info max_size=0 max_fps=60 tunnel_forward=true send_frame_meta=false control=false show_touches=false stay_awake=false power_off_on_close=false clipboard_autosync=false",
+            iDevice.executeShellCommand("CLASSPATH=" + DEVICE_SERVER_PATH + " app_process / com.genymobile.scrcpy.Server " + serverArgs,
                     new IShellOutputReceiver() {
                         @Override
                         public void addOutput(byte[] bytes, int i, int i1) {

@@ -126,7 +126,7 @@ public class EnvCheckTool {
         if (path != null) {
             path += File.separator + "platform-tools" + File.separator + "adb";
         } else {
-            path = "plugins" + File.separator + "adb";
+            path = PluginPathTool.path("adb");
         }
         if (system.contains("win")) {
             path += ".exe";
@@ -147,18 +147,14 @@ public class EnvCheckTool {
             }
         } else {
             printFail(type);
-            throw new RuntimeException("Missing file! Please ensure that `adb` command useful or `plugins` folders (containing adb) in the current directory");
+            throw new RuntimeException("Missing file! Please ensure that `adb` command useful or `plugins` folder (containing adb) at " + PluginPathTool.PLUGINS_DIR.getAbsolutePath());
         }
     }
 
     private boolean checkSAS() {
         String type = "Check sonic-android-supply plugin";
         printChecking(type);
-        String path = "plugins" + File.separator + "sonic-android-supply";
-        if (system.contains("win")) {
-            path += ".exe";
-        }
-        File sasBinary = new File(path);
+        File sasBinary = PluginPathTool.file("sonic-android-supply" + (system.contains("win") ? ".exe" : ""));
         if (sasBinary.exists()) {
             sasBinary.setExecutable(true);
             sasBinary.setWritable(true);
@@ -166,26 +162,22 @@ public class EnvCheckTool {
             List<String> ver = ProcessCommandTool.getProcessLocalCommand(String.format("\"%s\" version", sasBinary.getAbsolutePath()));
             sasPrintVersion = (ver.size() == 0 ? "null" : ver.get(0));
             if (ver.size() == 0 || !BytesTool.versionCheck(sasVersion, ver.get(0))) {
-                printFail(type);
-                throw new RuntimeException(String.format("Start sonic-android-supply failed! Please check sonic-android-supply version or use [chmod -R 777 %s]. if still failed, you can try with [sudo]%s", new File("plugins").getAbsolutePath(), (system.toUpperCase(Locale.ROOT).contains("MAC") ? " or you can see " + HELP_URL : "")));
+                printWarn(type + " (missing or invalid, Android supply disabled)");
+                return true;
             } else {
                 printPass(type);
                 return true;
             }
         } else {
-            printFail(type);
-            throw new RuntimeException("Missing file! Please ensure that `plugins` folders (containing sonic-android-supply) in the current directory");
+            printWarn(type + " (not found, Android supply disabled)");
+            return true;
         }
     }
 
     private boolean checkSIB() {
         String type = "Check sonic-ios-bridge plugin";
         printChecking(type);
-        String path = "plugins" + File.separator + "sonic-ios-bridge";
-        if (system.contains("win")) {
-            path += ".exe";
-        }
-        File sibBinary = new File(path);
+        File sibBinary = PluginPathTool.file("sonic-ios-bridge" + (system.contains("win") ? ".exe" : ""));
         if (sibBinary.exists()) {
             sibBinary.setExecutable(true);
             sibBinary.setWritable(true);
@@ -193,26 +185,22 @@ public class EnvCheckTool {
             List<String> ver = ProcessCommandTool.getProcessLocalCommand(String.format("\"%s\" version", sibBinary.getAbsolutePath()));
             sibPrintVersion = (ver.size() == 0 ? "null" : ver.get(0));
             if (ver.size() == 0 || !BytesTool.versionCheck(sibVersion, ver.get(0))) {
-                printFail(type);
-                throw new RuntimeException(String.format("Start sonic-ios-bridge failed! Please check sib's version or use [chmod -R 777 %s]. if still failed, you can try with [sudo]%s", new File("plugins").getAbsolutePath(), (system.toUpperCase(Locale.ROOT).contains("MAC") ? " or you can see " + HELP_URL : "")));
+                printWarn(type + " (missing or invalid, iOS bridge disabled)");
+                return true;
             } else {
                 printPass(type);
                 return true;
             }
         } else {
-            printFail(type);
-            throw new RuntimeException("Missing file! Please ensure that `plugins` folders (containing sonic-ios-bridge) in the current directory");
+            printWarn(type + " (not found, iOS bridge disabled)");
+            return true;
         }
     }
 
     private boolean checkSGM() {
         String type = "Check sonic-go-mitmproxy plugin";
         printChecking(type);
-        String path = "plugins" + File.separator + "sonic-go-mitmproxy";
-        if (system.contains("win")) {
-            path += ".exe";
-        }
-        File sgmBinary = new File(path);
+        File sgmBinary = PluginPathTool.file("sonic-go-mitmproxy" + (system.contains("win") ? ".exe" : ""));
         if (sgmBinary.exists()) {
             sgmBinary.setExecutable(true);
             sgmBinary.setWritable(true);
@@ -220,43 +208,43 @@ public class EnvCheckTool {
             List<String> ver = ProcessCommandTool.getProcessLocalCommand(String.format("\"%s\" -version", sgmBinary.getAbsolutePath()));
             sgmPrintVersion = (ver.size() == 0 ? "null" : ver.get(0));
             if (ver.size() == 0 || !BytesTool.versionCheck(sgmVersion, ver.get(0).replace("sonic-go-mitmproxy:", "").trim())) {
-                printFail(type);
-                throw new RuntimeException(String.format("Start sonic-go-mitmproxy failed! Please check sonic-go-mitmproxy version or use [chmod -R 777 %s]. if still failed, you can try with [sudo]%s", new File("plugins").getAbsolutePath(), (system.toUpperCase(Locale.ROOT).contains("MAC") ? " or you can see " + HELP_URL : "")));
+                printWarn(type + " (missing or invalid, mitmproxy disabled)");
+                return true;
             } else {
                 printPass(type);
                 return true;
             }
         } else {
-            printFail(type);
-            throw new RuntimeException("Missing file! Please ensure that `plugins` folders (containing sonic-go-mitmproxy) in the current directory");
+            printWarn(type + " (not found, mitmproxy disabled)");
+            return true;
         }
     }
 
     private boolean checkAPKs() {
         String type = "Check apk files";
         printChecking(type);
-        File saa = new File("plugins" + File.separator + "sonic-android-apk.apk");
-        File saus = new File("plugins" + File.separator + "sonic-appium-uiautomator2-server.apk");
-        File saust = new File("plugins" + File.separator + "sonic-appium-uiautomator2-server-test.apk");
+        File saa = PluginPathTool.file("sonic-android-apk.apk");
+        File saus = PluginPathTool.file("sonic-appium-uiautomator2-server.apk");
+        File saust = PluginPathTool.file("sonic-appium-uiautomator2-server-test.apk");
         if (saa.exists() && saus.exists() && saust.exists()) {
             printPass(type);
             return true;
         } else {
-            printFail(type);
-            throw new RuntimeException("Missing file! Please ensure that `plugins` folders (containing `sonic-android-apk.apk` `sonic-appium-uiautomator2-server.apk` `sonic-appium-uiautomator2-server-test.apk`) in the current directory");
+            printWarn(type + " (incomplete, Android automation may be limited)");
+            return true;
         }
     }
 
     public void checkPlugins() {
         String type = "Check all plugins";
-        File plugins = new File("plugins");
+        File plugins = PluginPathTool.PLUGINS_DIR;
         if (plugins.exists()) {
             if (checkADB() && checkSAS() && checkSIB() && checkSGM() && checkAPKs()) {
                 printPass(type);
             }
         } else {
             printFail(type);
-            throw new RuntimeException("Missing file! Please ensure that `plugins` folders in the current directory");
+            throw new RuntimeException("Missing file! Please ensure that `plugins` folder exists at " + PluginPathTool.PLUGINS_DIR.getAbsolutePath());
         }
     }
 
@@ -289,6 +277,14 @@ public class EnvCheckTool {
             System.out.println("→ " + s + " Fail ×");
         } else {
             System.out.println("\33[31;1m👉 " + s + " Fail ❌\033[0m");
+        }
+    }
+
+    public void printWarn(String s) {
+        if (system.contains("win")) {
+            System.out.println("→ " + s + " Skip (optional)");
+        } else {
+            System.out.println("\33[33;1m👉 " + s + " Skip (optional) ⚠\033[0m");
         }
     }
 
