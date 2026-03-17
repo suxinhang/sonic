@@ -1,0 +1,36 @@
+# ============================================
+# 在远端服务器 10.60.19.54 上执行以下命令
+# ============================================
+
+# 方法1: 使用Docker启动MySQL (推荐)
+docker run -d \
+  --name sonic-mysql-3307 \
+  -e MYSQL_ROOT_PASSWORD=password \
+  -e MYSQL_DATABASE=sonic \
+  -p 3307:3306 \
+  --restart=always \
+  mysql:5.7
+
+# 等待MySQL启动
+sleep 10
+
+# 创建sonic数据库
+docker exec sonic-mysql-3307 mysql -uroot -ppassword -e "CREATE DATABASE IF NOT EXISTS sonic CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# 验证数据库
+docker exec sonic-mysql-3307 mysql -uroot -ppassword -e "SHOW DATABASES LIKE 'sonic';"
+
+# ============================================
+# 或者方法2: 如果已有MySQL服务，修改配置监听3307端口
+# ============================================
+
+# 编辑MySQL配置文件
+# vi /etc/mysql/my.cnf
+# 添加:
+# [mysqld]
+# port = 3307
+# bind-address = 0.0.0.0
+
+# 重启MySQL服务
+# systemctl restart mysql
+
