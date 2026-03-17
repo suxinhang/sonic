@@ -1,0 +1,30 @@
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - id: "sonic-ios-bridge"
+    env:
+      - CGO_ENABLED=0
+    asmflags:
+      - all=-trimpath=C:/Users/ZHOUYIXUN/Desktop/sonic-ios-bridge
+    gcflags:
+      - all=-trimpath=C:/Users/ZHOUYIXUN/Desktop/sonic-ios-bridge
+    ldflags:
+      - -s -w
+    main: .
+    binary: sib
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - "386"
+      - amd64
+      - arm64
+archives:
+  - replacements:
+      darwin: macosx
+      linux: linux
+      windows: windows
+      386: x86
+      amd64: x86_64
