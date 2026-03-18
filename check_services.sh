@@ -12,7 +12,7 @@ if lsof -i :8888 > /dev/null 2>&1; then
     curl -s http://127.0.0.1:8888/health 2>/dev/null | python3 -m json.tool 2>/dev/null || echo "   ⚠️  服务运行但健康检查失败"
 else
     echo "   ❌ 未运行"
-    echo "   启动命令: ./start_ocr_service.sh"
+    echo "   启动命令: cd DeepSeek-OCR-2 && ./start_ocr_service.sh"
 fi
 echo ""
 

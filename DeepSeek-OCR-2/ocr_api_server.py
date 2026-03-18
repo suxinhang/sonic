@@ -5,6 +5,8 @@ DeepSeek-OCR-2 API Server for Sonic Platform
 """
 import os
 import sys
+import re
+import ast
 import json
 import base64
 import tempfile
@@ -22,10 +24,11 @@ CORS(app)
 model = None
 tokenizer = None
 model_loaded = False
+load_model_error = None  # 上次加载失败时的错误信息
 
 def load_model():
     """加载DeepSeek-OCR-2模型"""
-    global model, tokenizer, model_loaded
+    global model, tokenizer, model_loaded, load_model_error
     
     if model_loaded:
         return True
@@ -47,8 +50,58 @@ def load_model():
         print("Model loaded successfully")
         return True
     except Exception as e:
+        import traceback
+        load_model_error = str(e)
         print(f"Error loading model: {e}")
+        traceback.print_exc()
         return False
+
+
+# 解析 model 输出中的 grounding 坐标（<|ref|>类型<|/ref|><|det|>[[x1,y1,x2,y2],...]<|/det|>）
+# 坐标为模型内部 0–999，转为 0–1 归一化返回
+GROUNDING_PATTERN = re.compile(r'<\|ref\|>(.*?)<\|/ref\|><\|det\|>(.*?)<\|/det\|>', re.DOTALL)
+
+
+def parse_grounding_regions(raw_text):
+    """
+    从 infer 结果中解析出带坐标的区块。
+    返回 (clean_text, regions)，regions 每项为 {"type": str, "bbox": [x1, y1, x2, y2]}，bbox 为 0–1 归一化。
+    """
+    if not raw_text:
+        return "", []
+    regions = []
+    clean_parts = []
+    last_end = 0
+    for m in GROUNDING_PATTERN.finditer(raw_text):
+        clean_parts.append(raw_text[last_end : m.start()])
+        label_type = (m.group(1) or "").strip()
+        coords_str = (m.group(2) or "").strip()
+        try:
+            coords_list = ast.literal_eval(coords_str)
+        except (ValueError, SyntaxError):
+            last_end = m.end()
+            continue
+        if not isinstance(coords_list, list):
+            last_end = m.end()
+            continue
+        for box in coords_list:
+            if isinstance(box, (list, tuple)) and len(box) >= 4:
+                x1, y1, x2, y2 = float(box[0]), float(box[1]), float(box[2]), float(box[3])
+                # 模型坐标 0–999 -> 归一化 0–1
+                regions.append({
+                    "type": label_type,
+                    "bbox": [
+                        round(x1 / 999.0, 4),
+                        round(y1 / 999.0, 4),
+                        round(x2 / 999.0, 4),
+                        round(y2 / 999.0, 4),
+                    ]
+                })
+        last_end = m.end()
+    clean_parts.append(raw_text[last_end:])
+    clean_text = "".join(clean_parts)
+    return clean_text, regions
+
 
 @app.route('/health', methods=['GET'])
 def health():
@@ -66,7 +119,8 @@ def recognize():
             if not load_model():
                 return jsonify({
                     "success": False,
-                    "error": "Failed to load model"
+                    "error": "Failed to load model",
+                    "detail": load_model_error
                 }), 500
         
         # 获取参数
@@ -118,13 +172,22 @@ def recognize():
                 crop_mode=True,
                 save_results=save_results
             )
-            
-            return jsonify({
+            raw_text = str(result) if result else ""
+            payload = {
                 "success": True,
                 "mode": mode,
-                "text": str(result) if result else "",
+                "text": raw_text,
                 "outputPath": output_dir if save_results else None
-            })
+            }
+            # document 模式下解析并返回文字坐标（归一化 0–1）
+            if mode == "document" and raw_text:
+                clean_text, regions = parse_grounding_regions(raw_text)
+                payload["text"] = clean_text
+                payload["regions"] = regions
+                if regions and image:
+                    payload["imageWidth"] = image.size[0]
+                    payload["imageHeight"] = image.size[1]
+            return jsonify(payload)
         finally:
             # 清理临时文件
             try:
